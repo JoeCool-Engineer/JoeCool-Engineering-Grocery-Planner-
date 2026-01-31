@@ -67,11 +67,17 @@ export const ScheduleAvailabilityTable = pgTable("scheduleAvailabilities",
 
 // Define the reverse relation: each availability belongs to a schedule
 export const scheduleAvailabilityRelations = relations(
-    ScheduleAvailabilityTable,
-    ({ one }) => ({
-        schedule: one(ScheduleTable, {
-            fields: [ScheduleAvailabilityTable.scheduleId], // local key
-            references: [ScheduleTable.id], // foreign key
-        }),
-    })
+  ScheduleAvailabilityTable,
+  ({ one }) => ({
+    schedule: one(ScheduleTable, {
+      fields: [ScheduleAvailabilityTable.scheduleId], // local key
+      references: [ScheduleTable.id], // foreign key
+    }),
+  })
 )
+
+export * from "@/schema/recipes"
+export * from "@/schema/ingredients"
+export * from "@/schema/recipe-ingredients"
+export * from "@/schema/meals"
+export * from "@/schema/grocery"

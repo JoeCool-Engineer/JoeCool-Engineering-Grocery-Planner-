@@ -104,7 +104,7 @@ export async function getCalendarEventTimes(
     }
 }
 
-  export async function createCalendarEvent({
+export async function createCalendarEvent({
     clerkUserId,
     guestName,
     guestEmail,
@@ -114,8 +114,8 @@ export async function getCalendarEventTimes(
     eventName,
   }: {
     clerkUserId: string // The unique ID of the Clerk user.
-    guestName: string // The name of the guest attending the event.
-    guestEmail: string // The email address of the guest.
+    guestName?: string // The name of the guest attending the event.
+    guestEmail?: string // The email address of the guest.
     startTime: Date // The start time of the event.
     guestNotes?: string | null // Optional notes for the guest (can be null or undefined).
     durationInMinutes: number // The duration of the event in minutes.
@@ -142,19 +142,26 @@ export async function getCalendarEventTimes(
       }
   
       // Create the Google Calendar event using the Google API client.
+      const attendees = []
+      if (guestEmail && guestName) {
+        attendees.push({ email: guestEmail, displayName: guestName })
+      }
+      attendees.push({
+        email: primaryEmail.emailAddress,
+        displayName: `${calendarUser.firstName} ${calendarUser.lastName}`,
+        responseStatus: "accepted",
+      })
+
+      const summary = guestName
+        ? `${guestName} + ${calendarUser.firstName} ${calendarUser.lastName}: ${eventName}`
+        : `${calendarUser.firstName} ${calendarUser.lastName}: ${eventName}`
+
       const calendarEvent = await google.calendar("v3").events.insert({
         calendarId: "primary", // Use the primary calendar of the user.
         auth: oAuthClient, // Authentication using the OAuth client obtained earlier.
         sendUpdates: "all", // Send email notifications to all attendees of the event.
         requestBody: {
-          attendees: [
-            { email: guestEmail, displayName: guestName }, // Add the guest to the attendees list.
-            {
-              email: primaryEmail.emailAddress, // Add the user themselves as an attendee.
-              displayName: `${calendarUser.firstName} ${calendarUser.lastName}`, // Display name for the user.
-              responseStatus: "accepted", // Mark the user's attendance as accepted.
-            },
-          ],
+          attendees,
           description: guestNotes ? `Additional Details: ${guestNotes}` : "No additional details.", // Add description if guest notes are provided.
           start: {
             dateTime: startTime.toISOString(), // Start time of the event.
@@ -162,7 +169,7 @@ export async function getCalendarEventTimes(
           end: {
             dateTime: addMinutes(startTime, durationInMinutes).toISOString(), // Calculate the end time based on the duration.
           },
-          summary: `${guestName} + ${calendarUser.firstName} ${calendarUser.lastName}: ${eventName}`, // Title of the event, including the guest and user names.
+          summary, // Title of the event, including the guest and user names when available.
         },
       })
   
